@@ -1,0 +1,14 @@
+fastapi
+uvicorn[standard]
+sqlmodel
+face_recognition
+python-multipart
+Pillow
+numpy
+scikit-learn
+psycopg2-binary
+python-dotenv
+pillow-heif
+python-jose[cryptography]
+bcrypt
+reverse_geocoder

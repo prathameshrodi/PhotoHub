@@ -1,0 +1,35 @@
+/* Global Styles - Cleaned for Bootstrap Compatibility */
+body {
+  margin: 0;
+  font-family: 'Inter', system-ui, -apple-system, sans-serif;
+  -webkit-font-smoothing: antialiased;
+  /* background-color: #f8f9fa; Let Bootstrap or App.jsx handle backgrounds */
+}
+
+/* Custom Utilities if needed */
+.object-fit-cover {
+  object-fit: cover;
+}
+
+/* Spinner Animation */
+@keyframes spin {
+    100% { transform: rotate(360deg); }
+}
+.spin {
+    animation: spin 1s linear infinite;
+}
+
+/* Scrollbar Styling (Optional, can keep for nice scrollbars) */
+::-webkit-scrollbar {
+  width: 8px;
+}
+::-webkit-scrollbar-track {
+  background: #f1f1f1;
+}
+::-webkit-scrollbar-thumb {
+  background: #c1c1c1;
+  border-radius: 4px;
+}
+::-webkit-scrollbar-thumb:hover {
+  background: #a8a8a8;
+}
