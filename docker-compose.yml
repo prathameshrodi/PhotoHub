@@ -1,0 +1,106 @@
+version: '3.8'
+
+services:
+  db:
+    image: postgres:15-alpine
+    container_name: photoviewer_db
+    environment:
+      POSTGRES_USER: ${POSTGRES_USER:-postgres}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-password}
+      POSTGRES_DB: ${POSTGRES_DB:-photoviewer}
+    volumes:
+      - pgdata:/var/lib/postgresql/data
+    ports:
+      - "5432:5432"
+    restart: unless-stopped
+
+  redis:
+    image: redis:7-alpine
+    container_name: photoviewer_redis
+    restart: unless-stopped
+
+  backend:
+    build: 
+      context: ./backend
+      dockerfile: Dockerfile
+    container_name: photoviewer_backend
+    command: uvicorn app.main:app --host 0.0.0.0 --port 8000 --reload --reload-exclude .pytest_cache --reload-exclude __pycache__
+    environment:
+      - POSTGRES_SERVER=db
+      - POSTGRES_USER=${POSTGRES_USER:-postgres}
+      - POSTGRES_PASSWORD=${POSTGRES_PASSWORD:-password}
+      - POSTGRES_DB=${POSTGRES_DB:-photoviewer}
+      - REDIS_URL=redis://redis:6379/0
+      - CELERY_BROKER_URL=redis://redis:6379/0
+      - CELERY_RESULT_BACKEND=redis://redis:6379/0
+      - PHOTOS_DIR=/app/photos
+    volumes:
+      - ./backend:/app
+      - /app/.pytest_cache
+      - /app/__pycache__
+      - "D:/Pictures/Organized:/app/photos/Organized:ro"
+      - "D:/Pictures/Prathamesh's Iphone:/app/photos/Prathamesh_Iphone:ro"
+      - "D:/Pictures/Sonali's Iphone:/app/photos/Sonali_Iphone:ro"
+      - "D:/Pictures/traditinal marriage:/app/photos/traditional_marriage:ro"
+    ports:
+      - "8000:8000"
+    depends_on:
+      - db
+      - redis
+    restart: unless-stopped
+
+  worker:
+    build:
+      context: ./backend
+      dockerfile: Dockerfile
+    container_name: photoviewer_worker
+    shm_size: '2gb'
+    command: celery -A app.worker.celery_app worker --loglevel=info
+    environment:
+      - POSTGRES_SERVER=db
+      - POSTGRES_USER=${POSTGRES_USER:-postgres}
+      - POSTGRES_PASSWORD=${POSTGRES_PASSWORD:-password}
+      - POSTGRES_DB=${POSTGRES_DB:-photoviewer}
+      - CELERY_BROKER_URL=redis://redis:6379/0
+      - CELERY_RESULT_BACKEND=redis://redis:6379/0
+      - PHOTOS_DIR=/app/photos
+    volumes:
+      - ./backend:/app
+      - /app/.pytest_cache
+      - /app/__pycache__
+      - "D:/Pictures/Organized:/app/photos/Organized:ro"
+      - "D:/Pictures/Prathamesh's Iphone:/app/photos/Prathamesh_Iphone:ro"
+      - "D:/Pictures/Sonali's Iphone:/app/photos/Sonali_Iphone:ro"
+      - "D:/Pictures/traditinal marriage:/app/photos/traditional_marriage:ro"
+    depends_on:
+      - db
+      - redis
+      - backend
+    restart: unless-stopped
+
+  flower:
+    image: mher/flower:latest
+    container_name: photoviewer_flower
+    environment:
+      - CELERY_BROKER_URL=redis://redis:6379/0
+      - FLOWER_PORT=5555
+    ports:
+      - "5555:5555"
+    depends_on:
+      - redis
+      - worker
+    restart: unless-stopped
+
+  frontend:
+    build:
+      context: ./frontend
+      dockerfile: Dockerfile
+    container_name: photoviewer_frontend
+    ports:
+      - "5173:80"
+    depends_on:
+      - backend
+    restart: unless-stopped
+
+volumes:
+  pgdata:
