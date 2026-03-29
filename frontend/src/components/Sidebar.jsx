@@ -26,39 +26,47 @@ const Sidebar = () => {
     };
 
     return (
-        <div className="d-flex flex-column flex-shrink-0 p-3 bg-light" style={{ width: '280px', height: '100vh', borderRight: '1px solid #dee2e6' }}>
-            <a href="/" className="d-flex align-items-center mb-3 mb-md-0 me-md-auto link-dark text-decoration-none">
-                <div style={{ width: '32px', height: '32px', background: '#0d6efd', borderRadius: '8px' }} className="me-2"></div>
-                <span className="fs-4 fw-bold">Photos</span>
+        <div className="d-flex flex-column flex-shrink-0 p-3 glass-sidebar text-white" style={{ width: '280px', height: '100vh' }}>
+            <a href="/" className="d-flex align-items-center mb-4 mt-2 me-md-auto text-white text-decoration-none px-2">
+                <div style={{ width: '36px', height: '36px', background: 'var(--accent-primary)', borderRadius: '10px' }} className="me-3 d-flex justify-content-center align-items-center shadow">
+                    <Image size={20} color="white" />
+                </div>
+                <span className="fs-4 fw-bold tracking-tight" style={{ letterSpacing: '-0.5px' }}>Photos</span>
             </a>
-            <hr />
-            <Nav className="flex-column mb-auto">
+            
+            <Nav className="flex-column mb-auto mt-2">
                 {navItems.map((item) => (
-                    <Nav.Item key={item.path}>
+                    <Nav.Item key={item.path} className="mb-1">
                         <NavLink
                             to={item.path}
-                            className={({ isActive }) => `nav-link ${isActive ? 'active' : 'link-dark'} d-flex align-items-center gap-2`}
+                            className={({ isActive }) => `nav-link rounded-3 px-3 py-2 d-flex align-items-center gap-3 ${isActive ? 'bg-primary text-white shadow-sm' : 'text-white-50 hover-bg-glass'}`}
+                            style={{ transition: 'all 0.2s ease', fontWeight: 500 }}
                         >
-                            <item.icon size={18} />
-                            {item.label}
+                            {({ isActive }) => (
+                                <>
+                                    <item.icon size={20} className={isActive ? "text-white" : "text-white-50"} />
+                                    {item.label}
+                                </>
+                            )}
                         </NavLink>
                     </Nav.Item>
                 ))}
             </Nav>
-            <hr />
-            <div className="d-grid gap-2">
+            
+            <div className="mt-auto pt-3 border-top border-secondary">
                 <Button 
-                    variant="outline-danger" 
+                    variant="link" 
                     onClick={handleLogout}
-                    className="d-flex align-items-center justify-content-center gap-2"
+                    className="nav-link text-danger w-100 d-flex align-items-center gap-3 px-3 py-2 rounded-3 hover-bg-danger-subtle text-start"
+                    style={{ textDecoration: 'none', transition: 'all 0.2s ease', fontWeight: 500 }}
                 >
-                    <LogOut size={18} />
+                    <LogOut size={20} />
                     Sign Out
                 </Button>
             </div>
             <style>{`
-                .spin { animation: spin 1s linear infinite; }
-                @keyframes spin { 100% { transform: rotate(360deg); } }
+                .hover-bg-glass:hover { background: rgba(255, 255, 255, 0.05); color: white !important; }
+                .hover-bg-danger-subtle:hover { background: rgba(220, 53, 69, 0.1); }
             `}</style>
         </div>
     );

@@ -3,5 +3,10 @@
     "python.analysis.extraPaths": [
         "${workspaceFolder}/backend"
     ],
-    "editor.formatOnSave": true
+    "editor.formatOnSave": true,
+    "files.exclude":{
+        "**/__pycache__": true,
+        "**/_legacy": true,
+        "**/.pytest_cache": true,
+    }
 }

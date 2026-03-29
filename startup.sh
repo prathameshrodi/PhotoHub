@@ -15,7 +15,7 @@ cd backend
 # Assuming uv is installed and handles the venv
 # Redirecting uvicorn output has limits if python buffering is on, but uvicorn logs should go to file via python config
 # We redirect stdout/stderr to a startup log just in case of environment failures
-uv run uvicorn main:app --reload >> ../logs/backend_startup.log 2>&1 &
+uv run uvicorn app.main:app --reload >> ../logs/backend_startup.log 2>&1 &
 BACKEND_PID=$!
 
 echo "Backend running on PID $BACKEND_PID"

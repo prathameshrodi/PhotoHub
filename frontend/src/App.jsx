@@ -22,7 +22,7 @@ const Layout = () => {
       <div className="d-flex" style={{ height: '100vh', overflow: 'hidden', backgroundColor: '#f8f9fa' }}>
         <Sidebar />
         <main className="flex-grow-1 d-flex flex-column" style={{ minWidth: 0, height: '100vh', overflowY: 'auto' }}>
-          <header className="d-flex justify-content-between align-items-center mb-4 pb-3 border-bottom pt-4 px-4 bg-white sticky-top shadow-sm" style={{ zIndex: 100 }}>
+          <header className="d-flex justify-content-between align-items-center mb-4 pb-3 pt-4 px-4 sticky-top glass-panel" style={{ zIndex: 100 }}>
             <div className="flex-grow-1">
                  {/* Optional: Breadcrumbs or Title */}
             </div>
@@ -32,7 +32,7 @@ const Layout = () => {
               className="form-control"
               style={{ maxWidth: '400px' }}
             />
-            <div className="ms-3" style={{ width: '40px', height: '40px', borderRadius: '50%', background: '#e9ecef' }}></div>
+            <div className="ms-3" style={{ width: '40px', height: '40px', borderRadius: '50%', background: 'var(--accent-primary)' }}></div>
           </header>
           
           <div className="px-4 pb-4 flex-grow-1">

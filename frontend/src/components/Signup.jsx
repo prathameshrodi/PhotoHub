@@ -21,13 +21,7 @@ const Signup = () => {
         
         setLoading(true);
         try {
-            await api.post('/auth/signup', { // Changed to new router prefix if applicable? 
-                // Wait, main.py uses: app.include_router(auth.router, tags=["auth"]) NO PREFIX.
-                // So it is still /signup
-                // But wait, the route was defined as @router.post("/signup").
-                // If router has no prefix in include_router, it's /signup.
-                // The previous code had axios.post('http://localhost:8000/signup')
-                // Let's use api.post('/signup')
+            await api.post('/signup', {
                  username,
                  password
             });
@@ -40,56 +34,60 @@ const Signup = () => {
     };
 
     return (
-        <Container className="d-flex align-items-center justify-content-center" style={{ minHeight: '100vh', background: '#f8f9fa' }}>
-            <Card className="shadow-sm" style={{ width: '100%', maxWidth: '400px' }}>
-                <Card.Body className="p-4">
-                    <div className="text-center mb-4">
-                        <h2 className="fw-bold fs-4">Create Account</h2>
-                        <p className="text-muted">Join Photos today</p>
+        <Container fluid className="p-0 m-0 d-flex align-items-center justify-content-center" style={{ minHeight: '100vh', background: 'var(--bg-primary)' }}>
+            <Card className="glass-card shadow-lg border-0" style={{ width: '100%', maxWidth: '420px', borderRadius: '16px' }}>
+                <Card.Body className="p-5">
+                    <div className="text-center mb-4 mt-2">
+                        <div style={{ width: '56px', height: '56px', background: 'var(--accent-primary)', borderRadius: '16px', margin: '0 auto 16px' }} className="shadow"></div>
+                        <h2 className="fw-bold fs-3 text-white tracking-tight">Create Account</h2>
+                        <p className="text-white-50">Join your personal photo library</p>
                     </div>
 
-                    {error && <Alert variant="danger">{error}</Alert>}
+                    {error && <Alert variant="danger" className="border-0 rounded-3">{error}</Alert>}
 
                     <Form onSubmit={handleSignup}>
                         <Form.Group className="mb-3">
-                            <Form.Label>Username</Form.Label>
+                            <Form.Label className="text-white-50 fw-medium small">Username</Form.Label>
                             <Form.Control 
                                 type="text" 
                                 value={username} 
                                 onChange={(e) => { setUsername(e.target.value); setError(''); }}
                                 autoFocus
                                 required 
+                                className="py-2"
                             />
                         </Form.Group>
 
                         <Form.Group className="mb-3">
-                            <Form.Label>Password</Form.Label>
+                            <Form.Label className="text-white-50 fw-medium small">Password</Form.Label>
                             <Form.Control 
                                 type="password" 
                                 value={password} 
                                 onChange={(e) => { setPassword(e.target.value); setError(''); }}
                                 required 
+                                className="py-2"
                             />
                         </Form.Group>
 
                         <Form.Group className="mb-4">
-                            <Form.Label>Confirm Password</Form.Label>
+                            <Form.Label className="text-white-50 fw-medium small">Confirm Password</Form.Label>
                             <Form.Control 
                                 type="password" 
                                 value={confirm} 
                                 onChange={(e) => { setConfirm(e.target.value); setError(''); }}
                                 required 
+                                className="py-2"
                             />
                         </Form.Group>
 
-                        <Button variant="success" type="submit" className="w-100 mb-3" disabled={loading}>
+                        <Button variant="primary" type="submit" className="w-100 mb-3 py-2 fw-semibold shadow-sm rounded-3 mt-2" disabled={loading} style={{ background: 'var(--accent-primary)', border: 'none' }}>
                             {loading ? <Spinner as="span" animation="border" size="sm" /> : 'Create Account'}
                         </Button>
                     </Form>
                     
-                    <div className="text-center">
-                        <span className="text-muted">Already have an account? </span>
-                        <Link to="/login" className="text-decoration-none">Login</Link>
+                    <div className="text-center mt-3 mb-2">
+                        <span className="text-white-50">Already have an account? </span>
+                        <Link to="/login" className="text-decoration-none fw-medium" style={{ color: 'var(--accent-primary)' }}>Login</Link>
                     </div>
                 </Card.Body>
             </Card>

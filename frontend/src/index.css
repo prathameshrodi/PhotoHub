@@ -1,35 +1,100 @@
-/* Global Styles - Cleaned for Bootstrap Compatibility */
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap');
+
+:root {
+  --bg-primary: #0f172a;
+  --bg-secondary: #1e293b;
+  --text-primary: #f8fafc;
+  --text-secondary: #94a3b8;
+  --accent-primary: #3b82f6;
+  --accent-hover: #2563eb;
+  --bg-glass: rgba(30, 41, 59, 0.7);
+  --border-glass: rgba(255, 255, 255, 0.08);
+}
+
 body {
   margin: 0;
   font-family: 'Inter', system-ui, -apple-system, sans-serif;
   -webkit-font-smoothing: antialiased;
-  /* background-color: #f8f9fa; Let Bootstrap or App.jsx handle backgrounds */
+  background-color: var(--bg-primary);
+  color: var(--text-primary);
 }
 
-/* Custom Utilities if needed */
-.object-fit-cover {
-  object-fit: cover;
+/* Glassmorphism Utilities */
+.glass-panel {
+  background: var(--bg-glass) !important;
+  backdrop-filter: blur(12px) !important;
+  -webkit-backdrop-filter: blur(12px) !important;
+  border-bottom: 1px solid var(--border-glass) !important;
 }
 
-/* Spinner Animation */
+.glass-sidebar {
+  background: var(--bg-glass) !important;
+  backdrop-filter: blur(16px) !important;
+  border-right: 1px solid var(--border-glass) !important;
+  transition: width 0.3s ease;
+}
+
+.glass-card {
+  background: var(--bg-secondary);
+  border: 1px solid var(--border-glass);
+  border-radius: 12px;
+  box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06);
+  transition: transform 0.2s ease, box-shadow 0.2s ease;
+  overflow: hidden;
+}
+
+.glass-card:hover {
+  transform: translateY(-4px);
+  box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.3), 0 4px 6px -2px rgba(0, 0, 0, 0.15);
+}
+
+/* Animations */
 @keyframes spin {
-    100% { transform: rotate(360deg); }
+  100% { transform: rotate(360deg); }
 }
 .spin {
-    animation: spin 1s linear infinite;
+  animation: spin 1s linear infinite;
 }
 
-/* Scrollbar Styling (Optional, can keep for nice scrollbars) */
+@keyframes fadeIn {
+  from { opacity: 0; transform: translateY(10px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+.fade-in {
+  animation: fadeIn 0.4s ease-out forwards;
+}
+
+/* Bootstrap Overrides for Dark Mode Compatibility */
+input.form-control {
+  background-color: var(--bg-secondary) !important;
+  border: 1px solid var(--border-glass) !important;
+  color: var(--text-primary) !important;
+  border-radius: 8px !important;
+  transition: all 0.2s ease;
+}
+
+input.form-control:focus {
+  background-color: var(--bg-secondary) !important;
+  border-color: var(--accent-primary) !important;
+  box-shadow: 0 0 0 0.2rem rgba(59, 130, 246, 0.25) !important;
+  color: var(--text-primary) !important;
+}
+
+input.form-control::placeholder {
+  color: var(--text-secondary) !important;
+}
+
+/* Scrollbar Styling */
 ::-webkit-scrollbar {
   width: 8px;
 }
 ::-webkit-scrollbar-track {
-  background: #f1f1f1;
+  background: transparent;
 }
 ::-webkit-scrollbar-thumb {
-  background: #c1c1c1;
+  background: #334155;
   border-radius: 4px;
 }
 ::-webkit-scrollbar-thumb:hover {
-  background: #a8a8a8;
+  background: #475569;
 }

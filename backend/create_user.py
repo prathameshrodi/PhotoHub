@@ -3,7 +3,7 @@ sys.path.append(os.path.dirname(os.path.abspath(__file__)))
 
 from sqlmodel import Session, select
 from app.db.session import engine
-from app.db.models import User
+from app.models import User
 from app.core.security import get_password_hash
 
 def create_user(username, password):

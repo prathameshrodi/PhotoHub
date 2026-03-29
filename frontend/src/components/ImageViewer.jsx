@@ -86,27 +86,27 @@ const ImageViewer = ({ show, onClose, images, currentIndex, onNavigate, scale, r
             contentClassName="bg-dark text-white border-0"
             style={{ zIndex: 2000 }}
         >
-            <Modal.Body className="p-0 d-flex flex-column h-100 position-relative overflow-hidden">
+            <Modal.Body className="p-0 d-flex flex-column h-100 position-relative overflow-hidden" style={{ background: 'rgba(0,0,0,0.95)' }}>
                 {/* Toolbar */}
-                <div className="d-flex justify-content-between align-items-center p-3 position-absolute top-0 start-0 end-0" style={{ zIndex: 1050, background: 'linear-gradient(to bottom, rgba(0,0,0,0.7), transparent)' }}>
-                    <div className="d-flex gap-3">
-                        <Button variant="link" className="text-white p-0" onClick={handleZoomIn} title="Zoom In">
-                            <ZoomIn />
+                <div className="d-flex justify-content-between align-items-center p-3 position-absolute top-0 start-0 end-0 glass-panel" style={{ zIndex: 1050, borderBottom: '1px solid rgba(255,255,255,0.1) !important' }}>
+                    <div className="d-flex gap-4">
+                        <Button variant="link" className="text-white p-0 opacity-75 hover-opacity-100 transition-opacity" onClick={handleZoomIn} title="Zoom In">
+                            <ZoomIn size={24} />
                         </Button>
-                        <Button variant="link" className="text-white p-0" onClick={handleZoomOut} title="Zoom Out">
-                            <ZoomOut />
+                        <Button variant="link" className="text-white p-0 opacity-75 hover-opacity-100 transition-opacity" onClick={handleZoomOut} title="Zoom Out">
+                            <ZoomOut size={24} />
                         </Button>
-                        <Button variant="link" className="text-white p-0" onClick={handleRotate} title="Rotate">
-                            <RotateCw />
+                        <Button variant="link" className="text-white p-0 opacity-75 hover-opacity-100 transition-opacity" onClick={handleRotate} title="Rotate">
+                            <RotateCw size={24} />
                         </Button>
                     </div>
                     
-                    <div className="d-flex gap-3">
-                        <Button variant="link" className="text-white p-0" onClick={handleDownload} title="Download">
-                            <Download />
+                    <div className="d-flex gap-4">
+                        <Button variant="link" className="text-white p-0 opacity-75 hover-opacity-100 transition-opacity" onClick={handleDownload} title="Download">
+                            <Download size={24} />
                         </Button>
-                        <Button variant="link" className="text-white p-0" onClick={onClose} title="Close">
-                            <X size={32} />
+                        <Button variant="link" className="text-white p-0 opacity-75 hover-opacity-100 transition-opacity" onClick={onClose} title="Close">
+                            <X size={28} />
                         </Button>
                     </div>
                 </div>

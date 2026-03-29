@@ -5,13 +5,14 @@ import os
 
 logger = logging.getLogger("backend")
 
+
 def get_exif_data(image):
     """Returns a dictionary from the exif data of an PIL Image item. Also converts the GPS Tags"""
     exif_data = {}
     info = None
-    if hasattr(image, 'getexif'):
+    if hasattr(image, "getexif"):
         info = image.getexif()
-    elif hasattr(image, '_getexif'):
+    elif hasattr(image, "_getexif"):
         info = image._getexif()
     if info:
         for tag, value in info.items():
@@ -19,30 +20,32 @@ def get_exif_data(image):
             if decoded == "GPSInfo":
                 gps_data = {}
                 # If value is an int (offset), try to retrieve IFD
-                if isinstance(value, int) and hasattr(image, 'getexif'):
-                     try:
-                         # 34853 is GPSInfo tag
-                         gps_ifd = image.getexif().get_ifd(34853)
-                         for t, v in gps_ifd.items():
-                             sub_decoded = ExifTags.GPSTAGS.get(t, t)
-                             gps_data[sub_decoded] = v
-                     except Exception:
-                         pass
+                if isinstance(value, int) and hasattr(image, "getexif"):
+                    try:
+                        # 34853 is GPSInfo tag
+                        gps_ifd = image.getexif().get_ifd(34853)
+                        for t, v in gps_ifd.items():
+                            sub_decoded = ExifTags.GPSTAGS.get(t, t)
+                            gps_data[sub_decoded] = v
+                    except Exception:
+                        pass
                 elif isinstance(value, dict):
                     # Classic dictionary
                     for t in value:
                         sub_decoded = ExifTags.GPSTAGS.get(t, t)
                         gps_data[sub_decoded] = value[t]
-                
+
                 exif_data[decoded] = gps_data
             else:
                 exif_data[decoded] = value
     return exif_data
 
+
 def _get_if_exist(data, key):
     if key in data:
         return data[key]
     return None
+
 
 def _convert_to_degrees(value):
     """Helper function to convert the GPS coordinates stored in the EXIF to degress in float format"""
@@ -50,6 +53,7 @@ def _convert_to_degrees(value):
     m = value[1]
     s = value[2]
     return d + (m / 60.0) + (s / 3600.0)
+
 
 def get_lat_lon(exif_data):
     """Returns the latitude and longitude, if available, from the provided exif_data (obtained through get_exif_data above)"""
@@ -75,6 +79,7 @@ def get_lat_lon(exif_data):
 
     return lat, lon
 
+
 def extract_metadata(file_path: str):
     """
     Extracts DateTimeOriginal, Latitude, Longitude.
@@ -84,14 +89,14 @@ def extract_metadata(file_path: str):
         "capture_date": None,
         "latitude": None,
         "longitude": None,
-        "format": None
+        "format": None,
     }
-    
+
     try:
         with PILImage.open(file_path) as img:
             metadata["format"] = img.format
             exif = get_exif_data(img)
-            
+
             # Date
             # Try multiple keys for date
             date_str = exif.get("DateTimeOriginal")
@@ -103,10 +108,12 @@ def extract_metadata(file_path: str):
             if date_str:
                 try:
                     # Format: YYYY:MM:DD HH:MM:SS
-                    metadata["capture_date"] = datetime.strptime(date_str, "%Y:%m:%d %H:%M:%S")
+                    metadata["capture_date"] = datetime.strptime(
+                        date_str, "%Y:%m:%d %H:%M:%S"
+                    )
                 except ValueError:
                     pass
-            
+
             # Fallback to file modification time if still None
             if not metadata["capture_date"]:
                 try:
@@ -114,13 +121,13 @@ def extract_metadata(file_path: str):
                     metadata["capture_date"] = datetime.fromtimestamp(mtime)
                 except Exception:
                     pass
-            
+
             # GPS
             lat, lon = get_lat_lon(exif)
             metadata["latitude"] = lat
             metadata["longitude"] = lon
-            
+
     except Exception as e:
         logger.warning(f"Metadata extraction failed for {file_path}: {e}")
-        
+
     return metadata
