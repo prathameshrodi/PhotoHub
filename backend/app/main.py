@@ -7,7 +7,7 @@ import os
 
 from app.core import config
 from app.db.session import init_db
-from app.api.routes import auth, images, people, scan, locations
+from app.api.routes import auth, images, people, scan, locations, albums
 
 #
 # Setup Logging
@@ -43,23 +43,26 @@ def on_startup():
     init_db()
     # start_background_scanner()
 
+from fastapi import APIRouter
 
-# Mount Routers
-app.include_router(auth.router, tags=["auth"])
-app.include_router(images.router, prefix="/images", tags=["images"])
-app.include_router(people.router, prefix="/people", tags=["people"])
-app.include_router(scan.router, prefix="/scan", tags=["scan"])
-app.include_router(locations.router, prefix="/locations", tags=["locations"])
+# Create versioned API router
+api_v1_router = APIRouter()
 
+# Mount sub-routers to versioned router
+api_v1_router.include_router(auth.router, tags=["auth"])
+api_v1_router.include_router(images.router, prefix="/images", tags=["images"])
+api_v1_router.include_router(people.router, prefix="/people", tags=["people"])
+api_v1_router.include_router(scan.router, prefix="/scan", tags=["scan"])
+api_v1_router.include_router(locations.router, prefix="/locations", tags=["locations"])
+api_v1_router.include_router(albums.router, prefix="/albums", tags=["albums"])
 
-# Logging Endpoint (Keep at root for compatibility or move to util)
+# Logging Endpoint under utils
 class LogMessage(BaseModel):
     level: str
     message: str
     context: dict = {}
 
-
-@app.post("/logs", tags=["utils"])
+@api_v1_router.post("/logs", tags=["utils"])
 def log_frontend(log: LogMessage):
     msg = f"{log.message} | Context: {log.context}"
     if log.level.upper() == "ERROR":
@@ -69,3 +72,7 @@ def log_frontend(log: LogMessage):
     else:
         frontend_logger.info(msg)
     return {"status": "ok"}
+
+# Mount the versioned router to the app
+app.include_router(api_v1_router, prefix="/api/v1")
+

@@ -1,6 +1,7 @@
 import React, { useEffect, useCallback } from 'react';
 import { Modal, Button } from 'react-bootstrap';
 import { X, ChevronLeft, ChevronRight, ZoomIn, ZoomOut, RotateCw, Download } from 'lucide-react';
+import { API_BASE_URL } from '../api';
 
 const ImageViewer = ({ show, onClose, images, currentIndex, onNavigate, scale, rotation, setScale, setRotation }) => {
     
@@ -56,7 +57,7 @@ const ImageViewer = ({ show, onClose, images, currentIndex, onNavigate, scale, r
         if (!currentImage) return;
 
         try {
-            const imageUrl = `http://localhost:8000/images/content/${currentImage.id}`;
+            const imageUrl = `${API_BASE_URL}/images/content/${currentImage.id}`;
             const response = await fetch(imageUrl);
             const blob = await response.blob();
             const url = window.URL.createObjectURL(blob);
@@ -75,7 +76,7 @@ const ImageViewer = ({ show, onClose, images, currentIndex, onNavigate, scale, r
     if (!show || images.length === 0 || !images[currentIndex]) return null;
 
     const currentImage = images[currentIndex];
-    const imageUrl = `http://localhost:8000/images/content/${currentImage.id}`;
+    const imageUrl = `${API_BASE_URL}/images/content/${currentImage.id}`;
 
     return (
         <Modal 

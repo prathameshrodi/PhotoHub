@@ -9,7 +9,8 @@ from app.db.session import get_session
 from app.models import User, SessionToken
 from app.core.config import settings
 
-oauth2_scheme = OAuth2PasswordBearer(tokenUrl="token")
+oauth2_scheme = OAuth2PasswordBearer(tokenUrl="/api/v1/token")
+
 
 
 def verify_password(plain_password, hashed_password):

@@ -1,8 +1,13 @@
 import axios from 'axios';
 
+export const API_BASE_URL = `${window.location.origin}/api/v1`;
+
 const api = axios.create({
-    baseURL: 'http://localhost:8000',
+    baseURL: API_BASE_URL,
 });
+
+
+
 
 // Request interceptor to add token
 api.interceptors.request.use(

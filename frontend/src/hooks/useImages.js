@@ -28,9 +28,12 @@ export const useImages = (view, id, locationName, sortOrder) => {
 
             if (view === 'location' && locationName) {
                 params.location = decodeURIComponent(locationName);
+            } else if (view === 'album' && id) {
+                endpoint = `/albums/${id}/images`;
             } else if (id) {
                  endpoint = `/people/${id}/images`;
             }
+
 
             const response = await api.get(endpoint, { params });
             const newImages = response.data;

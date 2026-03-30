@@ -4,7 +4,7 @@ from typing import List, Optional
 from pydantic import BaseModel
 
 from app.db.session import get_session
-from app.models import Person, Image, User
+from app.models import Person, Image, ImageRead, User
 from app.core import security
 
 router = APIRouter()
@@ -48,10 +48,8 @@ def read_people(session: Session = Depends(get_session)):
                         break
 
             if best_face and best_face.image:
-                cover = best_face.image.thumbnail
-                if not cover:
-                    # Point to content endpoint (relative path for frontend)
-                    cover = f"images/content/{best_face.image.id}"
+                # Use the dedicated thumbnail endpoint
+                cover = f"images/thumbnail/{best_face.image.id}"
 
         result.append(
             PersonRead(id=p.id, name=p.name, cover_photo=cover, photo_count=count)
@@ -81,9 +79,7 @@ def read_person(person_id: int, session: Session = Depends(get_session)):
                     break
 
         if best_face and best_face.image:
-            cover = best_face.image.thumbnail
-            if not cover:
-                cover = f"images/content/{best_face.image.id}"
+            cover = f"images/thumbnail/{best_face.image.id}"
 
     return PersonRead(id=p.id, name=p.name, cover_photo=cover, photo_count=count)
 
@@ -133,7 +129,7 @@ def merge_people(
     }
 
 
-@router.get("/{person_id}/images", response_model=List[Image])
+@router.get("/{person_id}/images", response_model=List[ImageRead])
 def read_person_images(person_id: int, session: Session = Depends(get_session)):
     person = session.get(Person, person_id)
     if not person:

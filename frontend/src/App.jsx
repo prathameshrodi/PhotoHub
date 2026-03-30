@@ -1,8 +1,10 @@
 import React, { useEffect } from 'react';
 import { BrowserRouter as Router, Routes, Route, Navigate } from 'react-router-dom';
-import Sidebar from './components/Sidebar';
+import Navbar from './components/Navbar';
+import MobileNav from './components/MobileNav';
 import Gallery from './components/Gallery';
 import People from './components/People';
+import Albums from './components/Albums';
 import Login from './components/Login';
 import Signup from './components/Signup';
 import Locations from './components/Locations';
@@ -14,46 +16,35 @@ const PrivateRoute = ({ children }) => {
 };
 
 const Layout = () => {
-    // Shared Layout for authenticated pages
-    // We use height: 100vh and overflow-hidden on the outer container.
-    // The Sidebar stays static (fit-content or fixed width).
-    // The Main area grows and handles its own scrolling (overflow-y-auto).
     return (
-      <div className="d-flex" style={{ height: '100vh', overflow: 'hidden', backgroundColor: '#f8f9fa' }}>
-        <Sidebar />
-        <main className="flex-grow-1 d-flex flex-column" style={{ minWidth: 0, height: '100vh', overflowY: 'auto' }}>
-          <header className="d-flex justify-content-between align-items-center mb-4 pb-3 pt-4 px-4 sticky-top glass-panel" style={{ zIndex: 100 }}>
-            <div className="flex-grow-1">
-                 {/* Optional: Breadcrumbs or Title */}
-            </div>
-            <input
-              type="text"
-              placeholder="Search photos..."
-              className="form-control"
-              style={{ maxWidth: '400px' }}
-            />
-            <div className="ms-3" style={{ width: '40px', height: '40px', borderRadius: '50%', background: 'var(--accent-primary)' }}></div>
-          </header>
-          
-          <div className="px-4 pb-4 flex-grow-1">
+      <div className="min-vh-100 d-flex flex-column" style={{ backgroundColor: 'var(--bg-primary)', height: '100dvh', overflow: 'hidden' }}>
+        <div className="d-none d-md-block">
+            <Navbar />
+        </div>
+        <div className="d-md-none glass-panel p-3 d-flex align-items-center justify-content-between sticky-top" style={{ zIndex: 1100 }}>
+             <div className="d-flex align-items-center gap-2">
+                 <img src="/favicon.svg" alt="PhotoHub" style={{ width: '32px', height: '32px' }} />
+                 <h4 className="m-0 fw-bold text-white tracking-tight">PhotoHub</h4>
+             </div>
+             <div className="shadow-sm" style={{ width: '32px', height: '32px', borderRadius: '50%', background: 'var(--accent-primary)', border: '2px solid rgba(255,255,255,0.1)' }}></div>
+        </div>
+
+        
+        <main className="flex-grow-1 overflow-auto position-relative custom-scrollbar" style={{ minWidth: 0, paddingBottom: '80px' }}>
+          <div className="container-fluid py-4 px-3 px-lg-5">
             <Routes>
                <Route path="/" element={<Gallery />} />
                <Route path="/people" element={<People />} />
                <Route path="/people/:id" element={<Gallery />} />
                <Route path="/locations" element={<Locations />} />
-               {/* Note: We need to handle location filtering in Gallery if we route /locations/:id to it.
-                   Currently Gallery takes :id for Person ID.
-                   We might need a different prop or route param for location.
-                   Let's assume we pass a location prop or parse query param? 
-                   Actually, Gallery uses useParams().id. If we reuse it, it thinks it is Person ID.
-                   Let's route to /locations/:locationName and make Gallery handle it, 
-                   or create a LocationGallery wrapper.
-                   Simplest: <Route path="/locations/:locationName" element={<Gallery view="location" />} />
-                */}
                <Route path="/locations/:locationName" element={<Gallery view="location" />} />
+               <Route path="/albums" element={<Albums />} />
+               <Route path="/albums/:id" element={<Gallery view="album" />} />
             </Routes>
           </div>
         </main>
+        
+        <MobileNav />
       </div>
     );
 };

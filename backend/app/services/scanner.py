@@ -72,7 +72,7 @@ ALLOWED_EXTENSIONS = {
 TOLERANCE = 0.6
 PREFIX = "data:image/jpeg;base64,"
 
-def generate_thumbnail(file_path: str, max_size=(300, 300)) -> Optional[str]:
+def generate_thumbnail(file_path: str, max_size=(300, 300)) -> Optional[bytes]:
     try:
         with PILImage.open(file_path) as img:
             if img.mode != "RGB":
@@ -80,7 +80,7 @@ def generate_thumbnail(file_path: str, max_size=(300, 300)) -> Optional[str]:
             img.thumbnail(max_size)
             buffered = io.BytesIO()
             img.save(buffered, format="JPEG", quality=70)
-            return base64.b64encode(buffered.getvalue()).decode("utf-8")
+            return buffered.getvalue()
     except Exception as e:
         # Worker logger might not flush to main log easily, print is safer for debug if needed
         return None
@@ -134,8 +134,8 @@ def process_image_task(file_path: str) -> Dict[str, Any]:
         meta["location"] = location_name
         result["metadata"] = meta
 
-        # 3. Generate Thumbnail (Deferred to API / Redis Cache)
-        result["thumbnail"] = None
+        # 3. Generate Thumbnail (Stored as Binary in DB)
+        result["thumbnail"] = generate_thumbnail(file_path)
 
         # 4. Face Recognition (CPU Heavy)
         result["face_encodings"] = get_face_encodings(file_path)

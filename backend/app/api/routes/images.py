@@ -8,7 +8,7 @@ import logging
 from PIL import Image as PILImage
 import mimetypes
 from app.db.session import get_session
-from app.models import Image, User
+from app.models import Image, ImageRead, User
 from app.core import security
 from app.services.image_service import ImageService
 
@@ -16,7 +16,7 @@ logger = logging.getLogger("backend")
 router = APIRouter()
 
 
-@router.get("/", response_model=List[Image])
+@router.get("/", response_model=List[ImageRead])
 def read_images(
     offset: int = 0,
     limit: int = 100,
@@ -88,11 +88,16 @@ def get_image_thumbnail(
         return Response(content=cached_thumb, media_type="image/jpeg")
         
     image = session.get(Image, image_id)
-    if not image or not os.path.exists(image.path):
+    if not image or not os.path.exists(image.path or ""):
         raise HTTPException(status_code=404, detail="Image not found")
         
+    # If thumbnail exists in DB, cache it and return it
+    if image.thumbnail:
+        redis_client.set(cache_key, image.thumbnail, ex=86400 * 30) # 30 days cache
+        return Response(content=image.thumbnail, media_type="image/jpeg")
+
     try:
-        # Generate thumbnail
+        # Fallback to generating thumbnail if not in DB
         with PILImage.open(image.path) as img:
             if img.mode != "RGB":
                 img = img.convert("RGB")
@@ -101,8 +106,13 @@ def get_image_thumbnail(
             img.save(buffered, format="JPEG", quality=70)
             thumb_bytes = buffered.getvalue()
             
-            # Cache it. Expiry could be long or none.
-            redis_client.set(cache_key, thumb_bytes, ex=86400 * 7) # 1 week cache
+            # Save to DB for next time
+            image.thumbnail = thumb_bytes
+            session.add(image)
+            session.commit()
+            
+            # Cache it
+            redis_client.set(cache_key, thumb_bytes, ex=86400 * 30)
             
             return Response(content=thumb_bytes, media_type="image/jpeg")
     except Exception as e:

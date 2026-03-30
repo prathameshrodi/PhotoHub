@@ -47,6 +47,20 @@ def init_db():
                     conn.execute(text("ALTER TABLE image ADD COLUMN format TEXT"))
                     conn.commit()
 
+            # Migration for thumbnail to binary
+            columns = {col["name"]: col["type"] for col in inspector.get_columns("image")}
+            # Check the type of the thumbnail column
+            # In SQLAlchemy, bytecode/largebinary shows up.
+            # In Postgres, it's BYTEA.
+            column_type = str(columns.get("thumbnail", "")).upper()
+            if "BYTEA" not in column_type and "BINARY" not in column_type:
+                logger.info("Converting thumbnail column from TEXT to BYTEA")
+                with engine.connect() as conn:
+                    # In Postgres, converting to BYTEA with a USING NULL clears old data correctly.
+                    # Or we could try decode() but clearing it is safer since they are just thumbnails.
+                    conn.execute(text("ALTER TABLE image ALTER COLUMN thumbnail TYPE BYTEA USING NULL"))
+                    conn.commit()
+
         SQLModel.metadata.create_all(engine)
         logger.info("Database initialized successfully.")
     except Exception as e:

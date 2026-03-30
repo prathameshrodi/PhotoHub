@@ -56,36 +56,9 @@ def get_locations(current_user: User = Depends(get_current_user)):
         locations = []
         for loc, count, cover_id in results:
             cover = None
-            if cover_id in image_map:
-                img_obj = image_map[cover_id]
-
-                # Case 1: Database has thumbnail
-                if img_obj.thumbnail:
-                    cover = img_obj.thumbnail
-
-                # Case 2: On-the-fly generation from path
-                elif img_obj.path and os.path.exists(img_obj.path):
-                    try:
-                        with PILImage.open(img_obj.path) as img:
-                            # Resize to thumbnail size (e.g. 300x300 or similar aspect)
-                            img.thumbnail((400, 400))  # Reasonable size for cover
-
-                            buffer = io.BytesIO()
-                            # Convert to RGB if necessary (e.g. RGBA/P)
-                            if img.mode in ("RGBA", "P"):
-                                img = img.convert("RGB")
-
-                            img.save(buffer, format="JPEG", quality=70)
-                            img_str = base64.b64encode(buffer.getvalue()).decode(
-                                "utf-8"
-                            )
-                            cover = f"data:image/jpeg;base64,{img_str}"
-                    except Exception as e:
-                        print(f"Failed to generate thumbnail for {img_obj.path}: {e}")
-
-            # Fallback if generation failed or file missing
-            if not cover and cover_id:
-                cover = f"/images/content/{cover_id}"
+            if cover_id:
+                # Use the dedicated thumbnail endpoint
+                cover = f"/images/thumbnail/{cover_id}"
 
             locations.append(LocationRead(name=loc, count=count, cover_photo=cover))
 

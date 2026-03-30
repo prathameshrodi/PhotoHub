@@ -1,7 +1,9 @@
 import axios from 'axios';
 
 // Create a separate instance or use fetch to avoid circular dependency chains if api.js uses this
-const LOG_ENDPOINT = 'http://localhost:8000/logs';
+const LOG_ENDPOINT = `${window.location.origin}/api/v1/logs`;
+
+
 
 const sendLog = async (level, message, context = {}) => {
     // Always log to console
