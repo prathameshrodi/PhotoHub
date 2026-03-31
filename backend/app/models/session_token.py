@@ -8,3 +8,4 @@ class SessionToken(SQLModel, table=True):
     token: str = Field(index=True)
     user_id: int = Field(foreign_key="app_users.id")
     expires_at: datetime.datetime
+    is_deleted: bool = Field(default=False)

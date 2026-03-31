@@ -23,6 +23,13 @@ class Image(ImageBase, table=True):
     id: Optional[int] = Field(default=None, primary_key=True)
     thumbnail: Optional[bytes] = Field(default=None, sa_column=Column(LargeBinary))  # Binary thumbnail data
 
+    # Processing Status Flags
+    thumbnail_processed: bool = Field(default=False)
+    location_processed: bool = Field(default=False)
+    faces_processed: bool = Field(default=False)
+    is_processed: bool = Field(default=False)
+
+    is_deleted: bool = Field(default=False)
     faces: List["Face"] = Relationship(back_populates="image")
 
 

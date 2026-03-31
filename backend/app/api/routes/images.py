@@ -53,7 +53,7 @@ def get_date_offset(
 @router.get("/content/{image_id}")
 def get_image_content(image_id: int, session: Session = Depends(get_session)):
     image = session.get(Image, image_id)
-    if not image or not os.path.exists(image.path):
+    if not image or image.is_deleted or not os.path.exists(image.path):
         raise HTTPException(status_code=404, detail="Image file not found on disk")
 
     # Handle HEIC Conversion
@@ -88,7 +88,7 @@ def get_image_thumbnail(
         return Response(content=cached_thumb, media_type="image/jpeg")
         
     image = session.get(Image, image_id)
-    if not image or not os.path.exists(image.path or ""):
+    if not image or image.is_deleted or not os.path.exists(image.path or ""):
         raise HTTPException(status_code=404, detail="Image not found")
         
     # If thumbnail exists in DB, cache it and return it

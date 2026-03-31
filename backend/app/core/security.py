@@ -53,7 +53,7 @@ async def get_current_user(
 
     # Persistent Session Check
     db_token = session.exec(
-        select(SessionToken).where(SessionToken.token == token)
+        select(SessionToken).where(SessionToken.token == token, SessionToken.is_deleted == False)
     ).first()
     if not db_token:
         raise credentials_exception
@@ -68,7 +68,7 @@ async def get_current_user(
     except JWTError:
         raise credentials_exception
 
-    user = session.exec(select(User).where(User.username == username)).first()
+    user = session.exec(select(User).where(User.username == username, User.is_deleted == False)).first()
     if user is None:
         raise credentials_exception
     return user

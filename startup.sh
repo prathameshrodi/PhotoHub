@@ -3,8 +3,7 @@
 # Function to kill processes on exit
 cleanup() {
     echo "Stopping servers..."
-    kill $BACKEND_PID
-    kill $FRONTEND_PID
+    kill $BACKEND_PID $FRONTEND_PID $WORKER_PID $BEAT_PID
     exit
 }
 
@@ -26,5 +25,16 @@ npm run dev >> ../logs/frontend_startup.log 2>&1 &
 FRONTEND_PID=$!
 
 echo "Frontend running on PID $FRONTEND_PID"
+
+echo "Starting Celery Worker..."
+cd ../backend
+uv run celery -A app.worker.celery_app worker --loglevel=info >> ../logs/worker_startup.log 2>&1 &
+WORKER_PID=$!
+echo "Worker running on PID $WORKER_PID"
+
+echo "Starting Celery Beat..."
+uv run celery -A app.worker.celery_app beat --loglevel=info >> ../logs/beat_startup.log 2>&1 &
+BEAT_PID=$!
+echo "Beat running on PID $BEAT_PID"
 
 wait

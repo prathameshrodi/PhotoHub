@@ -20,7 +20,7 @@ class ImageService:
         sort_order: str = 'desc', 
         location: Optional[str] = None
     ) -> List[Image]:
-        query = select(Image)
+        query = select(Image).where(Image.is_deleted == False)
         
         # Permission Check
         if not user.is_admin:
@@ -55,7 +55,7 @@ class ImageService:
         statement = select(
             func.extract('year', date_col).label('year'), 
             func.extract('month', date_col).label('month')
-        ).distinct().order_by(
+        ).where(Image.is_deleted == False).distinct().order_by(
             func.extract('year', date_col).desc(), 
             func.extract('month', date_col).desc()
         )
@@ -98,7 +98,7 @@ class ImageService:
         except ValueError:
             raise ValueError("Invalid date format")
 
-        query = select(func.count(Image.id))
+        query = select(func.count(Image.id)).where(Image.is_deleted == False)
         
         # Permission Check
         if not user.is_admin:

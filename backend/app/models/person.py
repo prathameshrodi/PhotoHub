@@ -11,4 +11,5 @@ class Person(SQLModel, table=True):
     name: str = Field(default="Unknown", index=True)
     created_at: datetime.datetime = Field(default_factory=datetime.datetime.now)
 
+    is_deleted: bool = Field(default=False)
     faces: List["Face"] = Relationship(back_populates="person")

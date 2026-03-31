@@ -8,4 +8,10 @@ start "Photo Viewer Backend" cmd /k "cd backend && uv run uvicorn app.main:app -
 :: Start Frontend
 start "Photo Viewer Frontend" cmd /k "cd frontend && npm run dev >> ..\logs\frontend_startup.log 2>&1"
 
-echo Servers started in separate windows.
+:: Start Celery Worker
+start "Photo Viewer Worker" cmd /k "cd backend && uv run celery -A app.worker.celery_app worker --loglevel=info -P solo >> ..\logs\worker_startup.log 2>&1"
+
+:: Start Celery Beat
+start "Photo Viewer Beat" cmd /k "cd backend && uv run celery -A app.worker.celery_app beat --loglevel=info >> ..\logs\beat_startup.log 2>&1"
+
+echo Servers and workers started in separate windows.

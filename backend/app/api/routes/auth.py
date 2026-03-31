@@ -19,12 +19,12 @@ class UserCreate(BaseModel):
 
 @router.post("/signup")
 def signup(user: UserCreate, session: Session = Depends(get_session)):
-    existing = session.exec(select(User).where(User.username == user.username)).first()
+    existing = session.exec(select(User).where(User.username == user.username, User.is_deleted == False)).first()
     if existing:
         raise HTTPException(status_code=400, detail="Username already registered")
 
     # Check if this is the first user
-    user_count = session.exec(select(User)).all()
+    user_count = session.exec(select(User).where(User.is_deleted == False)).all()
     is_first = len(user_count) == 0
 
     hashed_password = security.get_password_hash(user.password)
@@ -41,7 +41,7 @@ async def login_for_access_token(
     form_data: OAuth2PasswordRequestForm = Depends(),
     session: Session = Depends(get_session),
 ):
-    user = session.exec(select(User).where(User.username == form_data.username)).first()
+    user = session.exec(select(User).where(User.username == form_data.username, User.is_deleted == False)).first()
     if not user or not security.verify_password(
         form_data.password, user.hashed_password
     ):
@@ -72,9 +72,10 @@ def logout(
     token: str = Depends(security.oauth2_scheme),
     session: Session = Depends(get_session),
 ):
-    statement = select(SessionToken).where(SessionToken.token == token)
+    statement = select(SessionToken).where(SessionToken.token == token, SessionToken.is_deleted == False)
     results = session.exec(statement)
     for res in results:
-        session.delete(res)
+        res.is_deleted = True
+        session.add(res)
     session.commit()
     return {"status": "logged_out"}

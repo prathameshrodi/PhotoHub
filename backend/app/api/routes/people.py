@@ -28,7 +28,7 @@ class MergeRequest(BaseModel):
 
 @router.get("/", response_model=List[PersonRead])
 def read_people(session: Session = Depends(get_session)):
-    people = session.exec(select(Person)).all()
+    people = session.exec(select(Person).where(Person.is_deleted == False)).all()
     result = []
     for p in people:
         cover = None
@@ -60,7 +60,7 @@ def read_people(session: Session = Depends(get_session)):
 @router.get("/{person_id}", response_model=PersonRead)
 def read_person(person_id: int, session: Session = Depends(get_session)):
     p = session.get(Person, person_id)
-    if not p:
+    if not p or p.is_deleted:
         raise HTTPException(status_code=404, detail="Person not found")
 
     cover = None
@@ -89,7 +89,7 @@ def update_person(
     person_id: int, person_update: PersonUpdate, session: Session = Depends(get_session)
 ):
     db_person = session.get(Person, person_id)
-    if not db_person:
+    if not db_person or db_person.is_deleted:
         raise HTTPException(status_code=404, detail="Person not found")
     db_person.name = person_update.name
     session.add(db_person)
@@ -105,22 +105,24 @@ def merge_people(
     current_user: User = Depends(security.get_current_user),
 ):
     target = session.get(Person, request.target_id)
-    if not target:
+    if not target or target.is_deleted:
         raise HTTPException(status_code=404, detail="Target person not found")
 
     for source_id in request.source_ids:
         if source_id == request.target_id:
             continue
         source = session.get(Person, source_id)
-        if not source:
+        if not source or source.is_deleted:
             continue
 
-        # Reassign faces -- Note: This might create duplicates if we strictly track unique faces, but here it's fine
-        for face in source.faces:
+        # Reassign faces
+        # Using list(source.faces) to avoid modification issues while iterating
+        for face in list(source.faces):
             face.person_id = target.id
             session.add(face)
 
-        session.delete(source)
+        source.is_deleted = True
+        session.add(source)
 
     session.commit()
     return {
@@ -132,10 +134,10 @@ def merge_people(
 @router.get("/{person_id}/images", response_model=List[ImageRead])
 def read_person_images(person_id: int, session: Session = Depends(get_session)):
     person = session.get(Person, person_id)
-    if not person:
+    if not person or person.is_deleted:
         raise HTTPException(status_code=404, detail="Person not found")
 
-    image_ids = {face.image_id for face in person.faces if face.image_id}
-    images = session.exec(select(Image).where(Image.id.in_(image_ids))).all()
+    image_ids = {face.image_id for face in person.faces if face.image_id and not face.is_deleted}
+    images = session.exec(select(Image).where(Image.id.in_(image_ids), Image.is_deleted == False)).all()
     # Sort images too?
     return images

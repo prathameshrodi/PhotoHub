@@ -35,13 +35,10 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
-from app.services.scanner import start_background_scanner
-
 
 @app.on_event("startup")
 def on_startup():
     init_db()
-    # start_background_scanner()
 
 from fastapi import APIRouter
 

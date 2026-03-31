@@ -8,12 +8,14 @@ import multiprocessing
 import traceback
 from concurrent.futures import ThreadPoolExecutor, as_completed
 from typing import List, Dict, Any, Optional
+from celery import shared_task
 
 from sqlmodel import Session, select
 from app.models import Image, Person, Face
 from app.db.session import engine
 from app.services import metadata
 from app.core import config
+import os
 
 from PIL import Image as PILImage
 from pillow_heif import register_heif_opener
@@ -109,45 +111,124 @@ def get_face_encodings(file_path: str) -> List[List[float]]:
     except Exception:
         return []
 
-# --- WORKER FUNCTION (Must be top level) ---
-def process_image_task(file_path: str) -> Dict[str, Any]:
-    """
-    Worker function to process a single image.
-    Returns a dictionary of result data to be saved to DB by the main process.
-    """
-    result = {
-        "path": file_path,
-        "filename": os.path.basename(file_path),
-        "status": "failed",
-        "error": None,
-        "thumbnail": None,
-        "metadata": {},
-        "face_encodings": []
-    }
+# --- WORKER FUNCTIONS (Must be top level) ---
 
-    try:
-        # 1. Extract Metadata
-        meta = metadata.extract_metadata(file_path)
+# --- WORKER FUNCTIONS (Must be top level) ---
 
-        # 2. Resolve Location
-        location_name = resolve_location(meta.get("latitude"), meta.get("longitude"))
-        meta["location"] = location_name
-        result["metadata"] = meta
+@shared_task(name="process_thumbnail_task")
+def process_thumbnail_task(batch_size: int = 200):
+    with Session(engine) as session:
+        # Get a batch of images that haven't been processed for thumbnails
+        images = session.exec(
+            select(Image)
+            .where(Image.thumbnail_processed == False)
+            .order_by(Image.Id)
+            .limit(batch_size)
+        ).all()
 
-        # 3. Generate Thumbnail (Stored as Binary in DB)
-        result["thumbnail"] = generate_thumbnail(file_path)
+        if not images:
+            return
 
-        # 4. Face Recognition (CPU Heavy)
-        result["face_encodings"] = get_face_encodings(file_path)
+        for index, image in enumerate(images):
+            try:
+                thumbnail_data = generate_thumbnail(image.path)
+                if thumbnail_data:
+                    image.thumbnail = thumbnail_data
+                image.thumbnail_processed = True
+                check_all_processed(session, image)
+                session.add(image)
+                logger.info(f"Thumbnail processed for image ID {image.id}")
+                if index % batch_size == 0:
+                    session.commit()
+            except Exception as e:
+                logger.error(f"Error processing thumbnail for {image.id}: {e}")
 
-        result["status"] = "success"
-    except Exception as e:
-        result["error"] = str(e)
-        # traceback.print_exc()
+@shared_task(name="process_location_task")
+def process_location_task(batch_size: int = 200):
+    with Session(engine) as session:
+        # Get a batch of images that haven't been processed for location
+        images = session.exec(
+            select(Image)
+            .where(Image.location_processed == False)
+            .order_by(Image.Id)
+            .limit(batch_size)
+        ).all()
 
-    return result
+        if not images:
+            return
 
-from celery import shared_task
+        for index, image in enumerate(images):
+            try:
+                if image.latitude is not None and image.longitude is not None:
+                    location_name = resolve_location(image.latitude, image.longitude)
+                    if location_name:
+                        image.location = location_name
+                image.location_processed = True
+                check_all_processed(session, image)
+                session.add(image)
+                logger.info(f"Location resolved for image ID {image.id}")
+                if index % batch_size == 0:
+                    session.commit()
+            except Exception as e:
+                logger.error(f"Error processing location for {image.id}: {e}")
+
+@shared_task(name="process_faces_task")
+def process_faces_task(batch_size: int = 100):
+    with Session(engine) as session:
+        # Get a batch of images that haven't been processed for faces
+        images = session.exec(
+            select(Image)
+            .where(Image.faces_processed == False)
+            .order_by(Image.Id)
+            .limit(batch_size)
+        ).all()
+
+        if not images:
+            return
+
+        for index, image in enumerate(images):
+            try:
+                encodings = get_face_encodings(image.path)
+                if encodings:
+                    register_faces_for_image(session, image, encodings)
+                image.faces_processed = True
+                check_all_processed(session, image)
+                session.add(image)
+                logger.info(f"Faces processed for image ID {image.id}")
+                if index % batch_size == 0:
+                    session.commit()
+            except Exception as e:
+                logger.error(f"Error processing faces for {image.id}: {e}")
+
+def check_all_processed(session, image: Image):
+    if image.thumbnail_processed and image.location_processed and image.faces_processed:
+        image.is_processed = True
+
+
+@shared_task(name="scan_all_configured_directories_task")
+def scan_all_configured_directories():
+    logger.info("Starting scheduled scan of all configured directories...")
+    photos_dir = os.environ.get("PHOTOS_DIR") or os.environ.get("PHOTOS_DIR_ENV")
+    if not photos_dir:
+        logger.error("PHOTOS_DIR not set. Scheduled scan aborted.")
+        return
+
+    # Handle multiple paths
+    paths = [p.strip() for p in photos_dir.split(";") if p.strip()]
+    if not paths:
+        logger.error("No valid paths in PHOTOS_DIR.")
+        return
+
+    for path in paths:
+        if os.path.exists(path):
+            # Not calling .delay() here because we want the beat worker
+            # to trigger the scan and wait for it?
+            # Actually, standard practice is to delay individual scans if there are many.
+            scan_directory.delay(path)
+        else:
+            logger.warning(f"Scan path not found: {path}")
+
+    logger.info("Scheduled scan complete.")
 
 @shared_task(name="scan_directory_task")
 def scan_directory(root_dir: str):
@@ -168,86 +249,54 @@ def scan_directory(root_dir: str):
 
     # 2. Check existing to avoid processing again
     with Session(engine) as session:
-        existing_images = session.exec(select(Image)).all()
-        existing_map = {img.path: img for img in existing_images}
+        # We only need to check if the path exists
+        # Optimization: use a set of existing paths
+        existing_paths = set(session.exec(select(Image.path)).all())
 
-        # Backfill Thumbnails logic could go here (omitted for speed optimization focus of new files)
-
-    new_files = [f for f in found_files if f not in existing_map]
+    new_files = [f for f in found_files if f not in existing_paths]
 
     if not new_files:
         logger.info("No new images to process.")
         return
 
-    logger.info(f"Found {len(new_files)} new images. Starting parallel processing...")
+    logger.info(f"Found {len(new_files)} new images. Registering...")
 
-    # 3. Sequential Processing (1 photo at a time)
-    BATCH_SIZE = 10
-    batch_images = []
-    batch_results = []
-
-    total_processed = 0
-
+    # 3. Quick Registration
+    total_registered = 0
     with Session(engine) as session:
-        for file_path in new_files:
+        for index, file_path in enumerate(new_files):
             try:
-                data = process_image_task(file_path)
-                if data["status"] == "success":
-                    meta = data["metadata"]
-                    img = Image(
-                        path=data["path"],
-                        filename=data["filename"],
-                        capture_date=meta.get("capture_date"),
-                        latitude=meta.get("latitude"),
-                        longitude=meta.get("longitude"),
-                        format=meta.get("format"),
-                        location=meta.get("location"),
-                        thumbnail=data.get("thumbnail")
-                    )
-                    logger.info(f"Processing Image {data.get('filename', 'No Image')}")
+                # 1. Extract Minimal Metadata (mostly dates)
+                meta = metadata.extract_metadata(file_path)
 
-                    batch_images.append(img)
-                    batch_results.append(data) # Keep data to process faces after image has ID
-                else:
-                    logger.error(f"Failed to process {file_path}: {data.get('error')}")
+                img = Image(
+                    path=file_path,
+                    filename=os.path.basename(file_path),
+                    capture_date=meta.get("capture_date"),
+                    latitude=meta.get("latitude"),
+                    longitude=meta.get("longitude"),
+                    format=meta.get("format"),
+                    thumbnail_processed=False,
+                    location_processed=False,
+                    faces_processed=False,
+                    is_processed=False,
+                    is_deleted=False
+                )
+                session.add(img)
+                total_registered += 1
 
+                # Commit every 50 to keep it somewhat batchy but responsive
+                if total_registered % 500 == 0:
+                    session.commit()
+                    logger.info(f"Registered {total_registered}/{len(new_files)} images...")
             except Exception as e:
-                logger.error(f"Worker exception for {file_path}: {e}")
+                logger.error(f"Error registering {file_path}: {e}")
+                session.rollback()
 
-            # Batch Commit
-            if len(batch_images) >= BATCH_SIZE:
-                logger.info("Saving to DB...")
-                save_batch(session, batch_images, batch_results)
-                total_processed += len(batch_images)
-                logger.info(f"Processed {total_processed}/{len(new_files)} images...")
-                batch_images = []
-                batch_results = []
+        session.commit() # Final commit
+    logger.info(f"Scan complete. Registered {total_registered} new images for background processing.")
 
-        # Final Batch
-        if batch_images:
-            save_batch(session, batch_images, batch_results)
-            total_processed += len(batch_images)
-
-    logger.info(f"Scan complete. Processed {total_processed} new images.")
-
-def save_batch(session: Session, images: List[Image], results: List[Dict]):
-    """
-    Saves a batch of images and processes their faces sequentially.
-    """
-    # 1. Add Images and Commit to get IDs
-    session.add_all(images)
-    session.commit()
-
-    # 2. Refresh images to get IDs and Process Faces
-    for img, res in zip(images, results):
-        session.refresh(img)
-        encodings = res.get("face_encodings", [])
-        if encodings:
-            register_faces_for_image(session, img, encodings)
-
-    # 3. Final commit for faces (register_faces_for_image commits internally but good practice)
-    # Actually register_faces_for_image handles its own commits/logic to be safe with Person creation
-    pass
+# Removed save_batch as logic is now handled by individual tasks
 
 def register_faces_for_image(session: Session, db_image: Image, encodings: List[List[float]]):
     # Load all people? Or just compare?
@@ -309,36 +358,4 @@ def create_face(session: Session, db_image: Image, person: Person, encoding: np.
     if not person.faces:
          person.faces = [db_face]
 
-# --- BACKGROUND SCANNER ---
-import threading
-import time
-
-def scan_background_loop():
-    logger.info("Starting background scan loop...")
-    photos_dir = os.environ.get("PHOTOS_DIR")
-    if not photos_dir:
-        logger.error("PHOTOS_DIR not set. Background scanner stopped.")
-        return
-
-    # Handle multiple paths
-    paths = [p.strip() for p in photos_dir.split(";") if p.strip()]
-    if not paths:
-        logger.error("No valid paths in PHOTOS_DIR.")
-        return
-
-    while True:
-        try:
-            for path in paths:
-                if os.path.exists(path):
-                    scan_directory(path)
-                else:
-                    logger.warning(f"Scan path not found: {path}")
-        except Exception as e:
-            logger.error(f"Error in background scan: {e}")
-
-        # Sleep for 5 minutes
-        time.sleep(300)
-
-def start_background_scanner():
-    t = threading.Thread(target=scan_background_loop, daemon=True)
-    t.start()
+# --- BACKGROUND SCANNER REMOVED IN FAVOR OF CELERY BEAT ---

@@ -8,4 +8,5 @@ class User(SQLModel, table=True):
     username: str = Field(unique=True, index=True)
     hashed_password: str
     is_admin: bool = Field(default=False)
+    is_deleted: bool = Field(default=False)
     allowed_paths: Optional[str] = Field(default=None)  # JSON list of paths

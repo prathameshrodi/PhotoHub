@@ -35,7 +35,7 @@ def get_locations(current_user: User = Depends(get_current_user)):
                 func.count(Image.id).label("count"),
                 func.min(Image.id).label("cover_id"),  # Naive cover selection
             )
-            .where(Image.location != None)
+            .where(Image.location != None, Image.is_deleted == False)
             .group_by(Image.location)
         )
 

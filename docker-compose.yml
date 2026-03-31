@@ -78,6 +78,31 @@ services:
       - backend
     restart: unless-stopped
 
+  beat:
+    build:
+      context: ./backend
+      dockerfile: Dockerfile
+    container_name: photoviewer_beat
+    command: celery -A app.worker.celery_app beat --loglevel=info
+    environment:
+      - POSTGRES_SERVER=db
+      - POSTGRES_USER=${POSTGRES_USER:-postgres}
+      - POSTGRES_PASSWORD=${POSTGRES_PASSWORD:-password}
+      - POSTGRES_DB=${POSTGRES_DB:-photoviewer}
+      - CELERY_BROKER_URL=redis://redis:6379/0
+      - CELERY_RESULT_BACKEND=redis://redis:6379/0
+      - PHOTOS_DIR=/app/photos
+    volumes:
+      - ./backend:/app
+      - /app/.pytest_cache
+      - /app/__pycache__
+      # Beat doesn't need to mount the photos, but it needs the app code
+    depends_on:
+      - db
+      - redis
+      - worker
+    restart: unless-stopped
+
   flower:
     image: mher/flower:latest
     container_name: photoviewer_flower

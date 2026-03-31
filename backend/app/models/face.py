@@ -11,6 +11,7 @@ class Face(SQLModel, table=True):
     encoding: str  # JSON string of list[float]
 
     image_id: Optional[int] = Field(default=None, foreign_key="image.id")
+    is_deleted: bool = Field(default=False)
     image: Optional["Image"] = Relationship(back_populates="faces")
 
     person_id: Optional[int] = Field(default=None, foreign_key="person.id")
